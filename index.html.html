@@ -1,0 +1,469 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>C3 Second-Tier Interpreter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Dark editorial layout: black hero with an italic accent word, then numbered sections (01, 02 ...) with a left label rail. */
+:root {
+  --bg: #f4f6f8;
+  --sheet: #fcfdfe;
+  --band: #e4edf5;
+  --band-ink: #10202e;
+  --band-dim: #4f6274;
+  --band-body: #33475a;
+  --band-line: #c9d8e6;
+  --blue: #1f5f99;
+  --blue-soft: rgba(31,95,153,.10);
+  --blue-head: #e9f0f6;
+  --ink: #111111;
+  --ink-2: #4b4b4b;
+  --ink-3: #7a7a7a;
+  --rule: #dbe2e8;
+  --rule-strong: #b3c0cc;
+  --gold: #b9770e;
+  --gold-soft: rgba(185,119,14,.10);
+  --field: #ffffff;
+  --muted-bg: #e9eef2;
+  --zone-pa: #d6e2e8;
+  --zone-grey: #e6e9ec;
+  --zone-mma: #f2e2c6;
+  --tick-pa: #2f6b85;
+  --tick-mma: #a5671d;
+  --specimen: #c0392b;
+  --flag: #c0392b;
+  --sans: "DM Sans", system-ui, sans-serif;
+  --serif: "Instrument Serif", Georgia, serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --band: #0b1622; --band-ink: #ffffff; --band-dim: #9fb2c4; --band-body: #c9d6e2; --band-line: #1d2c3b; --blue: #6fb0ec; --blue-soft: rgba(111,176,236,.14); --blue-head: #121c26;
+  --bg: #0a0a0a; --sheet: #121212; --ink: #f2f2f2; --ink-2: #bdbdbd; --ink-3: #8a8a8a;
+    --rule: #262626; --rule-strong: #3d3d3d; --gold: #f2a93b; --gold-soft: rgba(242,169,59,.12);
+    --field: #0d0d0d; --muted-bg: #181818;
+    --zone-pa: #17262d; --zone-grey: #1c1c1c; --zone-mma: #2b2112;
+    --tick-pa: #6fb3d1; --tick-mma: #e0a050; --specimen: #ff5a4a; --flag: #ff6b5b;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a0a0a; --sheet: #121212; --ink: #f2f2f2; --ink-2: #bdbdbd; --ink-3: #8a8a8a;
+  --rule: #262626; --rule-strong: #3d3d3d; --gold: #f2a93b; --gold-soft: rgba(242,169,59,.12);
+  --field: #0d0d0d; --muted-bg: #181818;
+  --zone-pa: #17262d; --zone-grey: #1c1c1c; --zone-mma: #2b2112;
+  --tick-pa: #6fb3d1; --tick-mma: #e0a050; --specimen: #ff5a4a; --flag: #ff6b5b;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); }
+em.accent { font-family: var(--serif); font-style: italic; font-weight: 400; color: var(--gold); letter-spacing: 0; }
+
+.hero { background: var(--band); color: var(--band-ink); padding: 56px 16px 52px; border-bottom: 1px solid var(--band-line); }
+.hero-in { max-width: 1040px; margin: 0 auto; }
+.crumb { font-size: 13px; color: var(--band-dim); margin: 0 0 22px; }
+.crumb span { color: var(--blue); }
+.hero h1 { font-weight: 600; font-size: clamp(38px, 7vw, 68px); line-height: 1.02; letter-spacing: -0.03em; margin: 0 0 18px; }
+.hero h1 em.accent { color: var(--gold); }
+.hero p { color: var(--band-body); max-width: 62ch; margin: 0 0 22px; font-size: 17px; }
+.tag { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; color: var(--blue); border: 1px solid var(--blue); background: var(--blue-soft); padding: 5px 12px; border-radius: 999px; }
+
+main { max-width: 1040px; margin: 0 auto; padding: 0 16px 48px; }
+.sec { display: grid; grid-template-columns: 200px 1fr; gap: 12px 40px; padding: 52px 0; border-bottom: 1px solid var(--rule); }
+.rail .no { font: 500 13px var(--mono); color: var(--blue); display: block; }
+.rail .lbl { border-top: 2px solid var(--blue); padding-top: 6px; display: inline-block; }
+.rail .lbl { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); }
+.sec h2 { font-weight: 600; font-size: clamp(26px, 3.6vw, 36px); line-height: 1.12; letter-spacing: -0.02em; margin: 0 0 18px; }
+.sec .body { min-width: 0; }
+
+.entry-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 14px; font-size: 14px; color: var(--ink-2); }
+select, input[type="number"] { font: inherit; color: var(--ink); background: var(--field); border: 1px solid var(--rule-strong); border-radius: 4px; padding: 7px 10px; }
+select { max-width: 100%; }
+input[type="number"] { font-family: var(--mono); width: 100%; min-width: 0; text-align: right; font-variant-numeric: tabular-nums; }
+input:focus-visible, select:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+table { border-collapse: collapse; width: 100%; background: var(--sheet); border: 1px solid var(--rule); }
+th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+thead th { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--blue); background: var(--blue-head); }
+td.analyte { font-weight: 600; }
+td.analyte small { display: block; font-weight: 400; color: var(--ink-3); font-size: 12.5px; }
+td.unit { font-family: var(--mono); font-size: 13px; color: var(--ink-2); white-space: nowrap; }
+td.num { width: 140px; }
+td.flag { font-family: var(--mono); font-size: 13px; font-weight: 600; width: 56px; text-align: center; }
+.flag-h { color: var(--flag); }
+.flag-n { color: var(--ink-3); }
+.u-sm { display: none; font-weight: 400; }
+.small { font-size: 13px; color: var(--ink-3); margin: 10px 0 0; max-width: 72ch; }
+
+.verdict { background: var(--sheet); border: 1px solid var(--rule); border-left: 4px solid var(--blue); padding: 18px 20px; }
+.verdict .label { font: 12px var(--mono); color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
+.verdict .call { display: block; font-size: 26px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.2; margin: 4px 0 6px; }
+.verdict .next { color: var(--ink-2); margin: 0; max-width: 66ch; }
+.verdict .next.error { color: var(--flag); }
+.verdict.pa { border-left-color: var(--tick-pa); }
+.verdict.mma { border-left-color: var(--tick-mma); }
+.verdict.b12 { border-left-color: var(--specimen); }
+.verdict.grey, .verdict.neg { border-left-color: var(--rule-strong); }
+ol.steps { list-style: none; padding: 0; margin: 18px 0 0; }
+ol.steps li { display: grid; grid-template-columns: 44px 1fr auto; gap: 4px 14px; padding: 14px 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
+ol.steps .n { font: 500 13px var(--mono); color: var(--blue); }
+ol.steps .q b { font-weight: 600; }
+ol.steps .q span { display: block; color: var(--ink-2); font-size: 14px; }
+ol.steps .out { font: 500 12.5px var(--mono); padding: 3px 10px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); white-space: nowrap; }
+ol.steps li.skipped { color: var(--ink-3); }
+ol.steps li.skipped .n { color: var(--ink-3); }
+ol.steps li.skipped .out { background: transparent; border: 1px dashed var(--rule-strong); color: var(--ink-3); }
+
+.scale svg { width: 100%; height: auto; display: block; }
+.scale text { font-family: var(--mono); font-size: 11px; fill: var(--ink-2); }
+.scale .zonelabel { font-family: var(--sans); font-size: 12px; font-weight: 600; fill: var(--ink); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 13px; color: var(--ink-2); margin-top: 8px; }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); background: var(--sheet); margin-bottom: 24px; }
+.fact { box-shadow: inset 0 3px 0 var(--blue); padding: 18px 18px 16px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.fact b { display: block; font-size: 30px; font-weight: 600; letter-spacing: -0.02em; color: var(--gold); line-height: 1.1; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.fact span { font-size: 13.5px; color: var(--ink-2); }
+ul.marks { list-style: none; padding: 0; margin: 0 0 20px; display: grid; gap: 10px; }
+ul.marks li { position: relative; padding-left: 28px; color: var(--ink-2); }
+ul.marks li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--blue); font-weight: 700; }
+ul.marks li.x::before { content: "✕"; color: var(--flag); }
+.callout { border: 1px solid var(--rule); border-left: 4px solid var(--flag); background: var(--sheet); padding: 14px 18px; color: var(--ink-2); font-size: 15px; margin: 0; }
+.callout b { color: var(--ink); }
+.callout + .callout { margin-top: 12px; border-left-color: var(--blue); background: var(--blue-soft); }
+
+ol.refs { margin: 0; padding-left: 22px; font-size: 14.5px; color: var(--ink-2); display: grid; gap: 8px; }
+ol.refs a { color: var(--blue); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+ol.refs a:hover { text-decoration-thickness: 2px; }
+ol.refs li::marker { color: var(--blue); font-weight: 600; }
+
+footer { border-top: 1px solid var(--band-line); background: var(--band); color: var(--band-dim); padding: 28px 16px; font-size: 13.5px; }
+.foot-in { max-width: 1040px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px 24px; justify-content: space-between; align-items: baseline; }
+footer em.accent { color: var(--gold); font-size: 18px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .marker { transition: transform .3s ease; }
+}
+@media (max-width: 760px) {
+  .hero { padding: 40px 16px; }
+  .sec { grid-template-columns: 1fr; padding: 38px 0; }
+  .rail { display: flex; gap: 10px; align-items: baseline; }
+}
+@media (max-width: 560px) {
+  th, td { padding: 9px 6px; }
+  th:nth-child(3), td.unit { display: none; }
+  .u-sm { display: inline; }
+  td.num { width: 96px; }
+  td.analyte { font-size: 14px; }
+  td.flag { width: 24px; }
+  input[type="number"] { padding: 6px; font-size: 14px; }
+  ol.steps li { grid-template-columns: 1fr auto; }
+  ol.steps .n { grid-column: 1 / -1; }
+}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-in">
+    <p class="crumb">Keerthi · IRIS National Fair 2026–27 <span>/</span> Computational Biology &amp; Bioinformatics</p>
+    <h1>C3 second-tier <em class="accent">interpreter.</em></h1>
+    <p>For a newborn screen with raised propionylcarnitine (C3). Enter the second-tier results from the same dried blood spot to see which branch of the proposed decision path applies: propionic acidemia (PA), isolated methylmalonic acidemia (MMA), or a B12-related cause.</p>
+    <span class="tag">Research prototype · not for clinical use</span>
+  </div>
+</header>
+
+<main>
+  <section class="sec" aria-labelledby="h-entry">
+    <div class="rail"><span class="no">01</span><span class="lbl">Enter results</span></div>
+    <div class="body">
+      <h2 id="h-entry">Second-tier <em class="accent">results.</em></h2>
+      <div class="entry-bar">
+        <label for="example">Load a published case</label>
+        <select id="example">
+          <option value="b12">Maternal B12 deficiency, newborn (Hu 2021)</option>
+          <option value="pa">Propionic acidemia, newborn median (Hu 2021)</option>
+          <option value="mut">Mutase MMA, newborn median (Hu 2021)</option>
+          <option value="cblc">CblC, newborn median (Hu 2021)</option>
+          <option value="mutd">Mutase MMA on treatment (Dubland 2021)</option>
+          <option value="ctrl">Unaffected newborn, control median (Dubland 2021)</option>
+          <option value="custom">Your own values</option>
+        </select>
+      </div>
+      <table>
+        <thead><tr><th>Analyte</th><th>Result<span class="u-sm"> µmol/L</span></th><th>Unit</th><th>Lab cut-off</th><th>Flag</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="analyte">Methylmalonic acid <small>MMA</small></td>
+            <td class="num"><input type="number" id="mma" step="any" min="0" inputmode="decimal" aria-label="Methylmalonic acid result"></td>
+            <td class="unit">µmol/L</td>
+            <td class="num"><input type="number" id="cutMma" step="any" min="0" inputmode="decimal" aria-label="Methylmalonic acid cut-off"></td>
+            <td class="flag" id="fMma">–</td>
+          </tr>
+          <tr>
+            <td class="analyte">2-Methylcitric acid <small>MCA</small></td>
+            <td class="num"><input type="number" id="mca" step="any" min="0" inputmode="decimal" aria-label="Methylcitric acid result"></td>
+            <td class="unit">µmol/L</td>
+            <td class="num"><input type="number" id="cutMca" step="any" min="0" inputmode="decimal" aria-label="Methylcitric acid cut-off"></td>
+            <td class="flag" id="fMca">–</td>
+          </tr>
+          <tr>
+            <td class="analyte">Total homocysteine <small>tHcy, optional</small></td>
+            <td class="num"><input type="number" id="hcy" step="any" min="0" inputmode="decimal" aria-label="Homocysteine result"></td>
+            <td class="unit">µmol/L</td>
+            <td class="num"><input type="number" id="cutHcy" step="any" min="0" inputmode="decimal" aria-label="Homocysteine cut-off"></td>
+            <td class="flag" id="fHcy">–</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="small">Cut-offs differ between laboratories (published MCA cut-offs range from 0.08 to 0.70 µmol/L), so use your laboratory's own. Defaults are those of Hu et al. 2021. The ratio in step 02 does not depend on cut-offs.</p>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="h-interp">
+    <div class="rail"><span class="no">02</span><span class="lbl">Interpretation</span></div>
+    <div class="body" aria-live="polite">
+      <h2 id="h-interp">What the path <em class="accent">suggests.</em></h2>
+      <div class="verdict" id="verdict">
+        <span class="label">Suggested category</span>
+        <span class="call" id="vCall">–</span>
+        <p class="next" id="vNext"></p>
+      </div>
+      <ol class="steps" id="steps"></ol>
+    </div>
+  </section>
+
+  <section class="sec scale" aria-labelledby="h-scale">
+    <div class="rail"><span class="no">03</span><span class="lbl">Reference</span></div>
+    <div class="body">
+      <h2 id="h-scale">Where this ratio sits among <em class="accent">published patients.</em></h2>
+      <svg id="scaleSvg" viewBox="0 0 800 150" role="img" aria-label="Log scale of the MMA to MCA ratio with published PA and MMA-type groups and this sample"></svg>
+      <div class="legend">
+        <span><i style="background:var(--tick-pa)"></i>PA groups and samples</span>
+        <span><i style="background:var(--tick-mma)"></i>MMA-type groups, incl. B12-related</span>
+        <span><i style="background:var(--specimen)"></i>This sample</span>
+      </div>
+      <p class="small">30 published rows from Hu 2021, Monostori 2017 and Dubland 2021: group medians and single samples, newborn and on-treatment. No published patient falls between 0.87 and 10.3.</p>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="h-method">
+    <div class="rail"><span class="no">04</span><span class="lbl">Method</span></div>
+    <div class="body">
+      <h2 id="h-method">How the cut-offs were <em class="accent">set and tested.</em></h2>
+      <div class="facts">
+        <div class="fact"><b>30 / 30</b><span>published rows sorted correctly into PA vs MMA-type by the ratio</span></div>
+        <div class="fact"><b>10 / 10</b><span>rows with homocysteine sorted correctly into isolated vs B12-related MMA</span></div>
+        <div class="fact"><b>100%</b><span>accuracy of the ratio in each study when its cut-off was learned from the other two</span></div>
+        <div class="fact"><b>12× vs 1.3×</b><span>gap between PA and MMA-type groups: ratio vs methylmalonic acid alone</span></div>
+      </div>
+      <ul class="marks">
+        <li>The ratio was chosen because a genome-scale model of human metabolism (Human-GEM) predicted it stays reliable in milder disease, where methylmalonic acid alone does not.</li>
+        <li class="x">The cut-offs of 1 and 10 were read from the same published data they were checked on. They have not been tested on individual patients.</li>
+        <li class="x">Mild B12 deficiency can give near-normal values and may pass step 01.</li>
+      </ul>
+      <p class="callout"><b>⚠ Not for clinical use.</b> This is a research prototype. A diagnosis needs confirmatory testing by a metabolic specialist.</p>
+      <p class="callout"><b>Research marker, not used here:</b> the model also predicts that formate separates B12 deficiency from genetic MMA. Formate rises in B12-deficient rats, but it has not been measured for this purpose in patients.</p>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="h-refs" style="border-bottom:0">
+    <div class="rail"><span class="no">05</span><span class="lbl">Sources</span></div>
+    <div class="body">
+      <h2 id="h-refs">Data <em class="accent">sources.</em></h2>
+      <ol class="refs">
+        <li>Hu Z, Yang J, Lin Y, et al. (2021). <a href="https://journals.sagepub.com/doi/10.1177/0969141320937725" target="_blank" rel="noopener">Determination of methylmalonic acid, 2-methylcitric acid, and total homocysteine in dried blood spots by liquid chromatography–tandem mass spectrometry: a reliable follow-up method for propionylcarnitine-related disorders in newborn screening</a>. <i>Journal of Medical Screening</i>.</li>
+        <li>Monostori P, et al. (2017). <a href="https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0184897" target="_blank" rel="noopener">Simultaneous determination of 3-hydroxypropionic acid, methylmalonic acid and methylcitric acid in dried blood spots: second-tier LC-MS/MS assay for newborn screening of propionic acidemia, methylmalonic acidemias and combined remethylation disorders</a>. <i>PLOS ONE</i> 12: e0184897.</li>
+        <li>Dubland JA, et al. (2021). <a href="https://www.sciencedirect.com/science/article/pii/S2667145X21000067" target="_blank" rel="noopener">Analysis of 2-methylcitric acid, methylmalonic acid, and total homocysteine in dried blood spots by LC-MS/MS for application in the newborn screening laboratory: a dual derivatization approach</a>. <i>Journal of Mass Spectrometry and Advances in the Clinical Lab</i> 20.</li>
+        <li>MacMillan L, et al. (2018). <a href="https://www.sciencedirect.com/science/article/pii/S0022316622109983" target="_blank" rel="noopener">Cobalamin deficiency results in increased production of formate secondary to decreased mitochondrial oxidation of one-carbon units in rats</a>. <i>Journal of Nutrition</i>.</li>
+        <li>Robinson JL, et al. (2020). <a href="https://www.science.org/doi/10.1126/scisignal.aaz1482" target="_blank" rel="noopener">An atlas of human metabolism (Human-GEM)</a>. <i>Science Signaling</i> 13: eaaz1482.</li>
+      </ol>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="foot-in">
+    <span><em class="accent">Keerthi</em> · IRIS National Fair 2026–27 research project</span>
+    <span>Not a medical device. Diagnosis needs confirmatory testing.</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var RATIO_PA_BELOW = 1, RATIO_MMA_ABOVE = 10;
+  var PUB = [{"s":"Hu 2021","d":"PA","g":"PA","t":"NBS","r":0.0204},{"s":"Hu 2021","d":"PA","g":"PA","t":"IFU","r":0.0663},{"s":"Hu 2021","d":"MUT (mut0/mut-)","g":"MMA-type","t":"NBS","r":15.0952},{"s":"Hu 2021","d":"MUT (mut0/mut-)","g":"MMA-type","t":"IFU","r":44.1435},{"s":"Hu 2021","d":"CblC","g":"MMA-type","t":"NBS","r":24.2268},{"s":"Hu 2021","d":"CblC","g":"MMA-type","t":"IFU","r":23.0444},{"s":"Hu 2021","d":"CblX","g":"MMA-type","t":"NBS","r":15.2273},{"s":"Hu 2021","d":"CblX","g":"MMA-type","t":"IFU","r":22.3},{"s":"Hu 2021","d":"Maternal B12 deficiency","g":"B12","t":"NBS","r":16.4722},{"s":"Hu 2021","d":"Maternal B12 deficiency","g":"B12","t":"IFU","r":23.8982},{"s":"Monostori 2017","d":"PA","g":"PA","t":"NBS","r":0.8738},{"s":"Monostori 2017","d":"PA","g":"PA","t":"treated","r":0.0581},{"s":"Monostori 2017","d":"CblB","g":"MMA-type","t":"NBS","r":547.5},{"s":"Monostori 2017","d":"CblC","g":"MMA-type","t":"NBS","r":99.6552},{"s":"Monostori 2017","d":"MMA mut(0)","g":"MMA-type","t":"treated","r":473.3151},{"s":"Monostori 2017","d":"MMA mut(-)","g":"MMA-type","t":"treated","r":285.0},{"s":"Monostori 2017","d":"CblA","g":"MMA-type","t":"treated","r":250.0},{"s":"Monostori 2017","d":"CblB","g":"MMA-type","t":"treated","r":603.75},{"s":"Monostori 2017","d":"CblC","g":"MMA-type","t":"treated","r":86.3636},{"s":"Monostori 2017","d":"QA sample 1","g":"PA","t":"QA","r":0.4464},{"s":"Monostori 2017","d":"QA sample 3","g":"PA","t":"QA","r":0.6148},{"s":"Monostori 2017","d":"QA sample 6","g":"PA","t":"QA","r":0.7424},{"s":"Monostori 2017","d":"QA sample 2","g":"MMA-type","t":"QA","r":994.6581},{"s":"Monostori 2017","d":"QA sample 4","g":"MMA-type","t":"QA","r":117.0},{"s":"Monostori 2017","d":"QA sample 5","g":"MMA-type","t":"QA","r":457.8988},{"s":"Monostori 2017","d":"QA sample 7","g":"MMA-type","t":"QA","r":111.5909},{"s":"Dubland 2021","d":"PA","g":"PA","t":"NBS","r":0.0199},{"s":"Dubland 2021","d":"PA","g":"PA","t":"treated","r":0.0814},{"s":"Dubland 2021","d":"MUT (unspecified)","g":"MMA-type","t":"treated","r":10.2905},{"s":"Dubland 2021","d":"CblC","g":"MMA-type","t":"treated","r":28.6905}];
+  var HU = { cutMma: 2.12, cutMca: 0.70, cutHcy: 10.04 };
+  var DUB = { cutMma: 1.06, cutMca: 0.396, cutHcy: 10.04 };
+  var EXAMPLES = {
+    b12:  { mma: 329.28, mca: 19.99, hcy: 165.79, cut: HU },
+    pa:   { mma: 0.23,   mca: 11.30, hcy: 1.77,   cut: HU },
+    mut:  { mma: 158.50, mca: 10.50, hcy: 1.45,   cut: HU },
+    cblc: { mma: 23.50,  mca: 0.97,  hcy: 32.37,  cut: HU },
+    mutd: { mma: 2.48,   mca: 0.241, hcy: 3.42,   cut: DUB },
+    ctrl: { mma: 0.702,  mca: 0.140, hcy: 3.70,   cut: DUB }
+  };
+  var $ = function (id) { return document.getElementById(id); };
+  var ids = ["mma", "mca", "hcy", "cutMma", "cutMca", "cutHcy"];
+
+  function num(id) { var v = $(id).value.trim(); if (v === "") return null; var n = Number(v); return isFinite(n) ? n : NaN; }
+  function fmt(x) {
+    if (x === null || isNaN(x)) return "–";
+    if (x >= 100) return x.toFixed(0);
+    if (x >= 10) return x.toFixed(1);
+    if (x >= 1) return x.toFixed(2);
+    return x.toFixed(3);
+  }
+  function setFlag(id, value, cut) {
+    var el = $(id);
+    if (value === null || cut === null || isNaN(value) || isNaN(cut)) { el.textContent = "–"; el.className = "flag"; return; }
+    var high = value > cut;
+    el.textContent = high ? "H" : "N";
+    el.className = "flag " + (high ? "flag-h" : "flag-n");
+    el.setAttribute("aria-label", high ? "above cut-off" : "within cut-off");
+  }
+
+  function interpret(v) {
+    var steps = [
+      { n: "01", q: "Is MMA or MCA above the lab cut-off?", s: "", out: "Not reached", skip: true },
+      { n: "02", q: "Ratio MMA ÷ MCA", s: "", out: "Not reached", skip: true },
+      { n: "03", q: "Total homocysteine", s: "", out: "Not reached", skip: true }
+    ];
+    var res = { cls: "neg", call: "", next: "", ratio: null, steps: steps, error: "" };
+    if (v.mma === null || v.mca === null) { res.error = "Enter both methylmalonic acid and methylcitric acid."; return res; }
+    if (isNaN(v.mma) || isNaN(v.mca) || v.mma < 0 || v.mca < 0) { res.error = "Results must be numbers of zero or more."; return res; }
+    if (v.cutMma === null || v.cutMca === null || isNaN(v.cutMma) || isNaN(v.cutMca)) { res.error = "Enter your laboratory's cut-offs for MMA and MCA."; return res; }
+
+    var abn = v.mma > v.cutMma || v.mca > v.cutMca;
+    steps[0].skip = false;
+    steps[0].s = "MMA " + fmt(v.mma) + " vs " + fmt(v.cutMma) + "; MCA " + fmt(v.mca) + " vs " + fmt(v.cutMca) + " µmol/L.";
+    steps[0].out = abn ? "Yes" : "No";
+    if (!abn) {
+      res.cls = "neg"; res.call = "Not consistent with PA or MMA";
+      res.next = "Both acids are within the laboratory's cut-offs, which points to a false-positive C3. Mild maternal B12 deficiency can give near-normal values, so consider checking the mother's B12.";
+      if (v.mca > 0) res.ratio = v.mma / v.mca;
+      return res;
+    }
+    if (v.mca === 0) { res.error = "Methylcitric acid is 0, so the ratio cannot be calculated. Enter the assay's detection limit instead."; return res; }
+
+    var ratio = v.mma / v.mca;
+    res.ratio = ratio;
+    steps[1].skip = false;
+    steps[1].s = fmt(v.mma) + " ÷ " + fmt(v.mca) + " = " + fmt(ratio) + ". Below 1 suggests PA; above 10 an MMA-type disorder.";
+    if (ratio < RATIO_PA_BELOW) {
+      steps[1].out = "PA range";
+      res.cls = "pa"; res.call = "Suggests propionic acidemia";
+      res.next = "Methylcitric acid is high relative to methylmalonic acid. Confirm with urine organic acids and genetic testing.";
+      return res;
+    }
+    if (ratio <= RATIO_MMA_ABOVE) {
+      steps[1].out = "Grey zone";
+      res.cls = "grey"; res.call = "Grey zone: the ratio cannot decide";
+      res.next = "No published patient has a ratio between 0.87 and 10.3. Rely on confirmatory tests (urine organic acids, genetic testing).";
+      return res;
+    }
+    steps[1].out = "MMA-type range";
+    steps[2].skip = false;
+    if (v.hcy === null || isNaN(v.hcy) || v.cutHcy === null || isNaN(v.cutHcy)) {
+      steps[2].s = "Not entered. Homocysteine is needed to tell a B12-related cause from isolated MMA.";
+      steps[2].out = "Missing";
+      res.cls = "mma"; res.call = "Suggests an MMA-type disorder";
+      res.next = "Enter total homocysteine to separate a B12-related cause (maternal B12 deficiency, CblC) from isolated MMA.";
+      return res;
+    }
+    var high = v.hcy > v.cutHcy;
+    steps[2].s = fmt(v.hcy) + " vs cut-off " + fmt(v.cutHcy) + " µmol/L.";
+    steps[2].out = high ? "High" : "Normal";
+    if (high) {
+      res.cls = "b12"; res.call = "Suggests a B12-related cause";
+      res.next = "Methylmalonic acid and homocysteine are both raised. Check the mother's and baby's vitamin B12; if the mother's B12 is normal, consider a cobalamin disorder such as CblC.";
+    } else {
+      res.cls = "mma"; res.call = "Suggests isolated methylmalonic acidemia";
+      res.next = "Homocysteine is normal, which fits a mutase, CblA or CblB defect. Confirm by genetic testing.";
+    }
+    return res;
+  }
+
+  var NS = "http://www.w3.org/2000/svg";
+  var X0 = 40, X1 = 770, LMIN = -2, LMAX = 3;
+  function xOf(r) { var l = Math.log10(Math.min(Math.max(r, 0.01), 1000)); return X0 + (l - LMIN) / (LMAX - LMIN) * (X1 - X0); }
+  function el(tag, attrs, text) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (text !== undefined) e.textContent = text; return e; }
+  var markerG;
+  function drawScale() {
+    var svg = $("scaleSvg"), css = getComputedStyle(document.documentElement);
+    var c = function (n) { return css.getPropertyValue(n).trim(); };
+    svg.innerHTML = "";
+    var top = 34, h = 66;
+    svg.appendChild(el("rect", { x: X0, y: top, width: xOf(1) - X0, height: h, fill: c("--zone-pa") }));
+    svg.appendChild(el("rect", { x: xOf(1), y: top, width: xOf(10) - xOf(1), height: h, fill: c("--zone-grey") }));
+    svg.appendChild(el("rect", { x: xOf(10), y: top, width: X1 - xOf(10), height: h, fill: c("--zone-mma") }));
+    svg.appendChild(el("text", { x: (X0 + xOf(1)) / 2, y: 24, "text-anchor": "middle", "class": "zonelabel" }, "PA"));
+    svg.appendChild(el("text", { x: (xOf(1) + xOf(10)) / 2, y: 24, "text-anchor": "middle", "class": "zonelabel" }, "Grey zone"));
+    svg.appendChild(el("text", { x: (xOf(10) + X1) / 2, y: 24, "text-anchor": "middle", "class": "zonelabel" }, "MMA-type"));
+    svg.appendChild(el("line", { x1: X0, x2: X1, y1: top + h, y2: top + h, stroke: c("--rule-strong"), "stroke-width": 1 }));
+    [0.01, 0.1, 1, 10, 100, 1000].forEach(function (t) {
+      var x = xOf(t);
+      svg.appendChild(el("line", { x1: x, x2: x, y1: top + h, y2: top + h + 5, stroke: c("--rule-strong") }));
+      svg.appendChild(el("text", { x: x, y: top + h + 18, "text-anchor": "middle" }, String(t)));
+    });
+    svg.appendChild(el("text", { x: (X0 + X1) / 2, y: 146, "text-anchor": "middle" }, "MMA ÷ MCA ratio (log scale)"));
+    PUB.forEach(function (p, i) {
+      var isPA = p.g === "PA";
+      var y = isPA ? top + 20 + (i % 3) * 9 : top + 30 + (i % 3) * 9;
+      var dot = el("circle", { cx: xOf(p.r), cy: y, r: 4, fill: isPA ? c("--tick-pa") : c("--tick-mma"), "fill-opacity": 0.9, stroke: c("--sheet"), "stroke-width": 1 });
+      dot.appendChild(el("title", {}, p.d + ", " + p.t + " (" + p.s + "): ratio " + fmt(p.r)));
+      svg.appendChild(dot);
+    });
+    markerG = el("g", { "class": "marker" });
+    markerG.appendChild(el("line", { x1: 0, x2: 0, y1: top - 4, y2: top + h, stroke: c("--specimen"), "stroke-width": 2.5 }));
+    markerG.appendChild(el("path", { d: "M -6 " + (top - 10) + " L 6 " + (top - 10) + " L 0 " + (top - 2) + " Z", fill: c("--specimen") }));
+    svg.appendChild(markerG);
+  }
+  function moveMarker(ratio) {
+    if (!markerG) return;
+    if (ratio === null || !isFinite(ratio)) { markerG.style.display = "none"; return; }
+    markerG.style.display = "";
+    markerG.setAttribute("transform", "translate(" + xOf(ratio) + ",0)");
+  }
+
+  function render() {
+    var v = {}; ids.forEach(function (k) { v[k] = num(k); });
+    setFlag("fMma", v.mma, v.cutMma); setFlag("fMca", v.mca, v.cutMca); setFlag("fHcy", v.hcy, v.cutHcy);
+    var r = interpret(v);
+    $("verdict").className = "verdict " + (r.error ? "neg" : r.cls);
+    $("vCall").textContent = r.error ? "Incomplete entry" : r.call;
+    $("vNext").textContent = r.error || r.next;
+    $("vNext").className = r.error ? "next error" : "next";
+    var ol = $("steps"); ol.innerHTML = "";
+    r.steps.forEach(function (s) {
+      var li = document.createElement("li");
+      if (s.skip) li.className = "skipped";
+      li.innerHTML = '<span class="n"></span><span class="q"><b></b><span></span></span><span class="out"></span>';
+      li.querySelector(".n").textContent = s.n;
+      li.querySelector(".q b").textContent = s.q;
+      li.querySelector(".q span").textContent = s.skip ? "" : s.s;
+      li.querySelector(".out").textContent = s.out;
+      ol.appendChild(li);
+    });
+    moveMarker(r.error ? null : r.ratio);
+  }
+  function load(key) {
+    var e = EXAMPLES[key]; if (!e) return;
+    $("mma").value = e.mma; $("mca").value = e.mca; $("hcy").value = e.hcy;
+    $("cutMma").value = e.cut.cutMma; $("cutMca").value = e.cut.cutMca; $("cutHcy").value = e.cut.cutHcy;
+    render();
+  }
+  $("example").addEventListener("change", function () { if (this.value !== "custom") load(this.value); });
+  ids.forEach(function (k) { $(k).addEventListener("input", function () { $("example").value = "custom"; render(); }); });
+  drawScale(); load("b12");
+  var redraw = function () { drawScale(); render(); };
+  if (window.matchMedia) { var mq = matchMedia("(prefers-color-scheme: dark)"); if (mq.addEventListener) mq.addEventListener("change", redraw); }
+  new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+})();
+</script>
+</body>
+</html>
+
+</body></html>
