@@ -2,11 +2,12 @@
 
 **A calculator to separate propionic acidemia, methylmalonic acidemia and B12-related causes after a raised C3 newborn screen**
 
-Keerthi · IRIS National Fair 2026–27 · Computational Biology & Bioinformatics
+Keerthi Lakshmi Narayanan : Submission for IRIS National Fair 2026–27 - Computational Biology & Bioinformatics
 
 **▶ [Open the calculator](https://<USERNAME>.github.io/c3-ratio-pa-mma/)**
 
-> ⚠ **Research prototype. Not a medical device.** This page must not be used to diagnose or treat any patient. A diagnosis needs confirmatory testing by a metabolic specialist.
+>**This is a research prototype. Not a medical device.** This page must not be used to diagnose or treat any patient. A diagnosis needs confirmatory testing by a metabolic specialist.
+>**NOTE REGARDING USAGE OF AI**: While the research question, data extraction, decision path,the actual coding in the Python notebooks that analyzed patient data, and all other research and findings is done by me, I used Claude for the HTML code of this webpage (web calculator), but the content, design and decision flow is by me. 
 
 ---
 
@@ -21,8 +22,7 @@ Keerthi · IRIS National Fair 2026–27 · Computational Biology & Bioinformatic
 7. [Limitations](#limitations)
 8. [Running the page yourself](#running-the-page-yourself)
 9. [Sources](#sources)
-10. [Acknowledgements](#acknowledgements)
-11. [License](#license)
+10. [License](#license)
 
 ---
 
@@ -42,7 +42,7 @@ These conditions need different treatment, so it matters which one a baby has. A
 - **2-Methylcitric acid (MCA)**: high in PA, and often in MMA too
 - **Total homocysteine (tHcy)**: high when methionine synthase is affected (B12 deficiency, CblC)
 
-Normally each value is compared with its own lab cut-off. This project asks whether **combining** the values gives a clearer answer, especially in milder disease.
+Normally each value is compared with its own lab cut-off. This project asks whether **combining** the values gives a clearer answer, especially in milder disease states, where differentiating between the different diseases can get harder..
 
 ---
 
@@ -55,7 +55,6 @@ You enter the three second-tier values and your lab's cut-offs. The page then:
 3. shows each step with the numbers used, and greys out steps that were not needed
 4. plots the sample's MMA ÷ MCA ratio on a log scale next to **30 published patient groups and samples**, so you can see where it falls compared with real data
 
-Everything runs in the browser. Nothing you type is sent or stored anywhere.
 
 ---
 
@@ -178,11 +177,6 @@ To host your own copy: fork this repository, then go to **Settings → Pages →
 
 ---
 
-## Acknowledgements
-
-The research question, project direction and data extraction from the published papers are my own work. Claude (an AI assistant by Anthropic) helped me fix and extend parts of the Python notebooks, including the robustness and patient-data checks, and wrote the HTML, styling and JavaScript for this web page based on my decision path and results.
-
----
 
 ## License
 
