@@ -4,7 +4,7 @@
 
 Keerthi Lakshmi Narayanan : Submission for IRIS National Fair 2026–27 - Computational Biology & Bioinformatics
 
-**▶ [Open the calculator](https://<keerthi-l-n>.github.io/c3-ratio-pa-mma/)**
+**▶ [Open the calculator](index.html.html)**
 
 >**This is a research prototype. Not a medical device.** This page must not be used to diagnose or treat any patient. A diagnosis needs confirmatory testing by a metabolic specialist.
 >**NOTE REGARDING USAGE OF AI**: While the research question, data extraction, decision path,the actual coding in the Python notebooks that analyzed patient data, and all other research and findings is done by me, I used Claude for the HTML code of this webpage (web calculator), but the content, design and decision flow is by me. 
